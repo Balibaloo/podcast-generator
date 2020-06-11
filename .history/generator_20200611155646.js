@@ -29,7 +29,7 @@ let getAudioFiles = (playlistFileUrl) => {
     })
 }
 
-let getTotalAudioDuration = (files,callback) => {
+let getTotalPlaytime = (files,callback) => {
 
     let allPromi = []
 
@@ -81,7 +81,7 @@ let getNameRoot = (directoryPath) => {
     return directoryPath +"\\" +directoryPath.split("\\").slice(-1)[0].slice(0,-4)
 }
 
-let generateVideo = (fileList,playtime,imagePath) => {
+let generateVideo = (fileList,playtime,imagePath ,callback) => {
 
     let fileNameRoot =  getNameRoot(directoryPath)
     let outputFilename = fileNameRoot + "_video.mp4"
@@ -101,30 +101,30 @@ let generateVideo = (fileList,playtime,imagePath) => {
             console.log(error)
         
         } else {
-            return outputFilename
+            callback(outputFilename)
         }
 
     })
 }
 
 
-module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) => {
+module.exports.generate = async (directoryPath, img_path, mainCallback) => {
 
-    let playlistFileName = await getPlaylistFiles(directoryUrl)[0]
+    let playlistFileName = await getPlaylistFiles(directoryPath)[0]
     console.log("playlist file : ",playlistFileName)
 
-    let audioFiles = await getAudioFiles( directoryUrl + "\\" + playlistFileName)
+    let audioFiles = await getAudioFiles( directoryPath + "\\" + playlistFileName)
     console.log("audio files : ",audioFiles)
 
     // prepend paths to filenames
-    audioFiles = audioFiles.map(fileUrl => {
-        return directoryUrl+"\\"+fileUrl
+    audioFiles = audioFiles.map(url => {
+        return directoryPath+"\\"+url
     })
 
-    let totalAudioDuration = await getTotalAudioDuration(audioFiles)
-    console.log("calculated total playtime ", totalAudioDuration)
+    let totaltPlaytime = await getTotalPlaytime(audioFiles)
+    console.log("calculated total playtime ",totaltPlaytime)
         
-    let generatedPath = await generateVideo(audioFiles, totalAudioDuration, foregroundImgUrl)
+    let generatedPath = await generateVideo(files,playtime,img_path,mainCallback)
     mainCallback(generatedPath)
 
 }

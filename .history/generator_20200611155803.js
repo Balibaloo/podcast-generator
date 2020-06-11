@@ -81,7 +81,7 @@ let getNameRoot = (directoryPath) => {
     return directoryPath +"\\" +directoryPath.split("\\").slice(-1)[0].slice(0,-4)
 }
 
-let generateVideo = (fileList,playtime,imagePath) => {
+let generateVideo = (fileList,playtime,imagePath ,callback) => {
 
     let fileNameRoot =  getNameRoot(directoryPath)
     let outputFilename = fileNameRoot + "_video.mp4"
@@ -101,14 +101,14 @@ let generateVideo = (fileList,playtime,imagePath) => {
             console.log(error)
         
         } else {
-            return outputFilename
+            callback(outputFilename)
         }
 
     })
 }
 
 
-module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) => {
+module.exports.generate = async (directoryUrl, img_path, mainCallback) => {
 
     let playlistFileName = await getPlaylistFiles(directoryUrl)[0]
     console.log("playlist file : ",playlistFileName)
@@ -122,9 +122,9 @@ module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) =
     })
 
     let totalAudioDuration = await getTotalAudioDuration(audioFiles)
-    console.log("calculated total playtime ", totalAudioDuration)
+    console.log("calculated total playtime ",totalAudioDuration)
         
-    let generatedPath = await generateVideo(audioFiles, totalAudioDuration, foregroundImgUrl)
+    let generatedPath = await generateVideo(files,playtime,img_path,mainCallback)
     mainCallback(generatedPath)
 
 }

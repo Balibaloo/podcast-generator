@@ -3,8 +3,8 @@ const exec = require('child_process').exec
 const mm = require('music-metadata');
 
 let getPlaylistFiles = (path) => {
-
     fs.readdir(path,(error,files) => {
+        
         if (!error){
             return files.filter((file) => {
                 return file.endsWith(".m3u")
@@ -16,12 +16,12 @@ let getPlaylistFiles = (path) => {
     })
 }
 
-let getAudioFiles = (playlistFileUrl) => {
-    
+let getAudioFileList = (playlistFileUrl,callback) => {
+
     fs.readFile(playlistFileUrl,(error,data) => {
         if (!error){
             // trims \n and trailing \r characters
-            return data.toString().split("\n").slice(0,-1).map(line => {return line.slice(0,-1)})
+            callback(data.toString().split("\n").slice(0,-1).map(line => {return line.slice(0,-1)}))
 
         } else {
             console.log(error)
@@ -29,7 +29,7 @@ let getAudioFiles = (playlistFileUrl) => {
     })
 }
 
-let getTotalAudioDuration = (files,callback) => {
+let getTotalPlaytime = (files,callback) => {
 
     let allPromi = []
 
@@ -81,50 +81,58 @@ let getNameRoot = (directoryPath) => {
     return directoryPath +"\\" +directoryPath.split("\\").slice(-1)[0].slice(0,-4)
 }
 
-let generateVideo = (fileList,playtime,imagePath) => {
+
+
+module.exports.generate = async (directoryPath, img_path, mainCallback) => {
 
     let fileNameRoot =  getNameRoot(directoryPath)
-    let outputFilename = fileNameRoot + "_video.mp4"
-    let complexFilterArguments = fileList.map((val,index) => {return `[${index+1}:a]`}).join('')
 
-    console.log("generating video", fileNameRoot)
-
-    exec(`ffmpeg -loop 1 -framerate 1 \
-    -i ${imagePath} \
-    -i ${fileList.map(line => `"${line}"`).join(" -i ")} \
-    -filter_complex "[0]scale='iw-mod(iw,2)':'ih-mod(ih,2)',format=yuv420p[v];${complexFilterArguments}concat=n=${fileList.length}:v=0:a=1[a]" \
-    -map "[v]" -r 15 -map "[a]" \
-    -tune stillimage -t ${playtime} -movflags +faststart ${outputFilename}`,(error,stdout,stderr) => {
-        console.log(stdout)
+    let allInOne = (fileList,playtime ,callback) => {
         
-        if (error){
-            console.log(error)
-        
-        } else {
-            return outputFilename
-        }
+        let outputFilename = fileNameRoot + "_video.mp4"
+        let complexFilterArguments = fileList.map((val,index) => {return `[${index+1}:a]`}).join('')
 
-    })
-}
+        console.log("generating video", fileNameRoot)
+
+        exec(`ffmpeg -loop 1 -framerate 1 \
+        -i ${img_path} \
+        -i ${fileList.map(line => `"${line}"`).join(" -i ")} \
+        -filter_complex "[0]scale='iw-mod(iw,2)':'ih-mod(ih,2)',format=yuv420p[v];${complexFilterArguments}concat=n=${fileList.length}:v=0:a=1[a]" \
+        -map "[v]" -r 15 -map "[a]" \
+        -tune stillimage -t ${playtime} -movflags +faststart ${outputFilename}`,(error,stdout,stderr) => {
+            console.log(stdout)
+            
+            if (error){
+                console.log(error)
+            
+            } else {
+                callback(outputFilename)
+            }
+
+        })
+    }
 
 
-module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) => {
+    let files = await getPlaylistFiles(directoryPath) 
+    
+    playlist = files[0]
+    console.log("playlist file : ",playlist)
 
-    let playlistFileName = await getPlaylistFiles(directoryUrl)[0]
-    console.log("playlist file : ",playlistFileName)
+    getAudioFileList( directoryPath + "\\" + playlist,(files) => {
+        console.log("audio files : ",files)
 
-    let audioFiles = await getAudioFiles( directoryUrl + "\\" + playlistFileName)
-    console.log("audio files : ",audioFiles)
+        files = files.map(url => {
+            return directoryPath+"\\"+url
+        })
 
-    // prepend paths to filenames
-    audioFiles = audioFiles.map(fileUrl => {
-        return directoryUrl+"\\"+fileUrl
-    })
+        getTotalPlaytime(files, (playtime) => {
 
-    let totalAudioDuration = await getTotalAudioDuration(audioFiles)
-    console.log("calculated total playtime ", totalAudioDuration)
-        
-    let generatedPath = await generateVideo(audioFiles, totalAudioDuration, foregroundImgUrl)
-    mainCallback(generatedPath)
+            console.log("calculated playtime ",playtime)
+            
+            allInOne(files,playtime,mainCallback)
+            
+        } )
+    
+    }) 
 
 }

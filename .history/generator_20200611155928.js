@@ -101,7 +101,7 @@ let generateVideo = (fileList,playtime,imagePath) => {
             console.log(error)
         
         } else {
-            return outputFilename
+            callback(outputFilename)
         }
 
     })
