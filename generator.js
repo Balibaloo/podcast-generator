@@ -1,35 +1,44 @@
 const fs = require('fs');
 const exec = require('child_process').exec
 const mm = require('music-metadata');
+const { resolve } = require('path');
 
-let getPlaylistFiles = (path) => {
+let getPlaylistFiles = (path) => new Promise((resolve,reject) => {
 
     fs.readdir(path,(error,files) => {
         if (!error){
-            return files.filter((file) => {
+
+            files = files.filter((file) => {
                 return file.endsWith(".m3u")
             })
+            
+            if (files[0]){
+                resolve(files)
+            } else {
+                reject(-1)
+            }
+        
         } else {
-            console.log(error)
+            reject(error)
         }
 
     })
-}
+})  
 
-let getAudioFiles = (playlistFileUrl) => {
+let getAudioFiles = (playlistFileUrl) => new Promise((resolve,reject) => {
     
     fs.readFile(playlistFileUrl,(error,data) => {
         if (!error){
             // trims \n and trailing \r characters
-            return data.toString().split("\n").slice(0,-1).map(line => {return line.slice(0,-1)})
+            resolve(data.toString().split("\n").slice(0,-1).map(line => {return line.slice(0,-1)}))
 
         } else {
-            console.log(error)
+            reject(error)
         }
     })
-}
+}) 
 
-let getTotalAudioDuration = (files,callback) => {
+let getTotalAudioDuration = (files,callback) => new Promise((resolve,reject) =>{
 
     let allPromi = []
 
@@ -40,14 +49,14 @@ let getTotalAudioDuration = (files,callback) => {
     Promise.all(allPromi).then((results) => {
         
         // get sum of play time rounded to nearest second
-        callback(Math.ceil(results.reduce((accum,val) => {return accum + val})))
+        resolve(Math.ceil(results.reduce((accum,val) => {return accum + val})))
         
     }).catch(error => {
-        console.log(error)
+        reject(error)
     })
     
 
-}
+})
 
 let getSinglePlaytime = (url) => new Promise((resolve,reject) => {
 
@@ -56,7 +65,7 @@ let getSinglePlaytime = (url) => new Promise((resolve,reject) => {
     resolve(metadata.format.duration);
   })
   .catch( err => {
-    console.error(err.message);
+    reject(err.message);
   });
     
 
@@ -81,7 +90,7 @@ let getNameRoot = (directoryPath) => {
     return directoryPath +"\\" +directoryPath.split("\\").slice(-1)[0].slice(0,-4)
 }
 
-let generateVideo = (fileList,playtime,imagePath) => {
+let generateVideo = (fileList,playtime,imagePath,directoryPath) => new Promise((resolve,reject) =>{
 
     let fileNameRoot =  getNameRoot(directoryPath)
     let outputFilename = fileNameRoot + "_video.mp4"
@@ -90,27 +99,30 @@ let generateVideo = (fileList,playtime,imagePath) => {
     console.log("generating video", fileNameRoot)
 
     exec(`ffmpeg -loop 1 -framerate 1 \
-    -i ${imagePath} \
+    -i "${imagePath}" \
     -i ${fileList.map(line => `"${line}"`).join(" -i ")} \
     -filter_complex "[0]scale='iw-mod(iw,2)':'ih-mod(ih,2)',format=yuv420p[v];${complexFilterArguments}concat=n=${fileList.length}:v=0:a=1[a]" \
     -map "[v]" -r 15 -map "[a]" \
-    -tune stillimage -t ${playtime} -movflags +faststart ${outputFilename}`,(error,stdout,stderr) => {
+    -tune stillimage -t ${playtime} -movflags +faststart "${outputFilename}"`,(error,stdout,stderr) => {
         console.log(stdout)
         
         if (error){
-            console.log(error)
+            reject(error)
         
         } else {
-            return outputFilename
+            resolve(outputFilename)
         }
 
     })
-}
+})
 
+async function generator(directoryUrl, foregroundImgUrl, mainCallback) {
 
-module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) => {
-
-    let playlistFileName = await getPlaylistFiles(directoryUrl)[0]
+    try {
+        let playlistFileName = await getPlaylistFiles(directoryUrl);
+    
+        console.log(playlistFileName)
+    playlistFileName = playlistFileName[0]
     console.log("playlist file : ",playlistFileName)
 
     let audioFiles = await getAudioFiles( directoryUrl + "\\" + playlistFileName)
@@ -124,7 +136,22 @@ module.exports.generate = async (directoryUrl, foregroundImgUrl, mainCallback) =
     let totalAudioDuration = await getTotalAudioDuration(audioFiles)
     console.log("calculated total playtime ", totalAudioDuration)
         
-    let generatedPath = await generateVideo(audioFiles, totalAudioDuration, foregroundImgUrl)
-    mainCallback(generatedPath)
+    let generatedPath = await generateVideo(audioFiles, totalAudioDuration, foregroundImgUrl, directoryUrl)
+    mainCallback(null,generatedPath)
+
+    } catch (error){
+        if (error != -1){
+            throw error
+        
+        } else {
+            mainCallback(-1)    
+        }
+    }
+    
+
+    
 
 }
+
+
+module.exports.generate = generator
