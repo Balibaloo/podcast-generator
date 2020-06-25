@@ -1,0 +1,26 @@
+{
+  "name": "podcast-generator",
+  "version": "1.0.0",
+  "description": "an ffmpeg script used to convert multiple audio files with a playlist to a single video with a still image, supports searching whole directories for groups of files to \"convert\"",
+  "main": "launcher.js",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Balibaloo/podcast-generator.git"
+  },
+  "keywords": [
+    "ffmpeg",
+    "concat",
+    "podcast"
+  ],
+  "author": "Roman Kubiv",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Balibaloo/podcast-generator/issues"
+  },
+  "homepage": "https://github.com/Balibaloo/podcast-generator#readme"
+}
