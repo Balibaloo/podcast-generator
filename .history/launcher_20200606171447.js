@@ -1,3 +1,0 @@
-const generator = require("./generator")
-
-
