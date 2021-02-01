@@ -1,3 +1,5 @@
 node_modules
-testFiles
 .history
+
+temp*
+test*
