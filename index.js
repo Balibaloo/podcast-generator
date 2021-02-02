@@ -1,5 +1,5 @@
 'use strict';
-const generator = require("./generator")
+const generator = require("./podcast-generator")
 
 let imagePath = "C:\\Repos\\podcast-generator\\MA.jpg";
 // let imagePath = "C:\\Pictures\\Ma-Vinil.png"
