@@ -31,9 +31,7 @@ let getSinglePlaytime = (URL) => new Promise((resolve, reject) => {
 })
 
 module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = true) => new Promise(async (resolve, reject) => {
-  playtime = await getVideoDuration();
-
-  let [playtime, err] = await getVideoDuration(audioFilePaths);
+  let [playtime, err] = await getVideoDuration(fileList);
   if (playtime === -1) {
     console.log("WARNING", outputFileName, "may be missing files, the playlist file is incorrect or some audio files are corrupt");
     return reject(err);

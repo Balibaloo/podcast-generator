@@ -64,7 +64,7 @@ module.exports = () => {
 
         let outputFileName = getFolderName(sourceURL) + "_video.mp4";
 
-        generator.vidFromAudio(audioFilePaths, foregroundImgURL, outputFileName, playtime).then(() => {
+        generator.vidFromAudio(audioFilePaths, foregroundImgURL, outputFileName).then(() => {
             console.log("Finished", outputFileName);
             return resolve();
         }).catch(err => reject(err));
@@ -82,16 +82,29 @@ module.exports = () => {
             })
     }
 
+    let execPromissesSyncOn = (argListList, promToExecute, index = 0, results = []) => new Promise((resolve, reject) => {
+        promToExecute(...argListList[index]).then((firstResults) => {
+            results = [...results, firstResults];
+
+            if (index != argListList.length - 1)
+                execPromissesSyncOn(argListList, promToExecute, index + 1)
+                .then(restRes => {
+                    resolve([...results, ...restRes])
+                }).catch(err => resolve([...results, ['failed', err]]));
+            else
+                resolve(results);
+        }).catch(err => resolve([...results, ['failed', err]]))
+    });
+
     var generateForSubFolders = (directoryURL, foregroundImgURL) => new Promise((resolve, reject) => {
 
-        let allPromises = []
+        let promisseArgs = []
 
         applyToSubfoldersOf(directoryURL, (dir) => {
-            allPromises.push(
-                startVideoGeneration(dir, foregroundImgURL))
+            promisseArgs.push([dir, foregroundImgURL])
         })
 
-        Promise.allSettled(allPromises)
+        execPromissesSyncOn(promisseArgs, startVideoGeneration)
             .then(values => {
                 resolve(values.filter(val => val.value))
             })
