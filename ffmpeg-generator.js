@@ -30,15 +30,24 @@ let getSinglePlaytime = (URL) => new Promise((resolve, reject) => {
     .catch(reject);
 })
 
-module.exports.generator = (fileList, imagePath, outputFileName) => new Promise(async (resolve, reject) => {
+module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = true) => new Promise(async (resolve, reject) => {
   playtime = await getVideoDuration();
 
-  showVideoDetails(outputFileName, playtime, fileList);
+  let [playtime, err] = await getVideoDuration(audioFilePaths);
+  if (playtime === -1) {
+    console.log("WARNING", outputFileName, "may be missing files, the playlist file is incorrect or some audio files are corrupt");
+    return reject(err);
+    // reject(new Error("Failed to fetch playtime"));
+  }
+
+  if (showStart)
+    showVideoDetails(outputFileName, playtime, fileList);
 
   let complexFilterArguments = fileList.map((val, index) => {
     return `[${index+1}:a]`
-  }).join('')
+  }).join('');
 
+  // start ffmpeg child proc to generate vid
   let proc = childProcess.spawn("ffmpeg", [
     '-loop', '1', '-framerate', '1',
     '-i', imagePath,
@@ -48,9 +57,10 @@ module.exports.generator = (fileList, imagePath, outputFileName) => new Promise(
     '-tune', 'stillimage', '-t', playtime, '-movflags', '+faststart', outputFileName,
   ])
 
+  // once ffmpeg proc finishes, by crashing or otherwise
   proc.on("exit", (code, signal) => {
     if (code === 0)
-      resolve(outputFileName)
+      resolve(outputFileName);
     else
       reject(signal);
   })

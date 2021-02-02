@@ -1,6 +1,6 @@
 'use strict';
 const fs = require('fs');
-
+const generator = require('./ffmpeg-generator');
 
 module.exports = () => {
 
@@ -56,33 +56,18 @@ module.exports = () => {
             return resolve([err.message, err.path]);
         }
 
-        try {
-            console.log('fetching files from', sourceURL + "\\" + playlistFileName);
-            let audioFileNames = fetchAudioFileNames(sourceURL + "\\" + playlistFileName);
+        console.log('fetching files from', sourceURL + "\\" + playlistFileName);
+        let audioFileNames = fetchAudioFileNames(sourceURL + "\\" + playlistFileName);
 
+        // prepend paths to filenames
+        let audioFilePaths = audioFileNames.map(fileURL => sourceURL + "\\" + fileURL);
 
-            // prepend paths to filenames
-            let audioFilePaths = audioFileNames.map(fileURL => sourceURL + "\\" + fileURL);
+        let outputFileName = getFolderName(sourceURL) + "_video.mp4";
 
-            let [playtime, err] = await getVideoDuration(audioFilePaths);
-
-            let outputFileName = getFolderName(sourceURL) + "_video.mp4";
-
-            if (playtime === -1) {
-                console.log("WARNING", outputFileName, "failed to start, it may be missing files, the playlist file is incorrect or some audio files are corrupt");
-                reject(err);
-                reject(new Error("Failed to fetch playtime"));
-
-            } else {
-                generateVideo(audioFilePaths, foregroundImgURL, outputFileName, playtime).then(() => {
-                    console.log("Finished", outputFileName);
-                    resolve();
-                });
-            }
-
-        } catch (err) {
-            reject(err);
-        }
+        generator.vidFromAudio(audioFilePaths, foregroundImgURL, outputFileName, playtime).then(() => {
+            console.log("Finished", outputFileName);
+            return resolve();
+        }).catch(err => reject(err));
     })
 
     let applyToSubfoldersOf = async (dir, func) => {
