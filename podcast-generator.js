@@ -116,7 +116,7 @@ module.exports = () => {
 
         execPromissesSyncOn(promisseArgs, startVideoGeneration)
             .then(values => {
-                resolve(values.filter(val => val.value))
+                resolve(values.filter(val => val))
             })
     })
 
