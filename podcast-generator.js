@@ -93,7 +93,17 @@ module.exports = () => {
                 }).catch(err => resolve([...results, ['failed', err]]));
             else
                 resolve(results);
-        }).catch(err => resolve([...results, ['failed', err]]))
+        }).catch(err => {
+            results = [...results, ['failed', err]];
+
+            if (index != argListList.length - 1)
+                execPromissesSyncOn(argListList, promToExecute, index + 1)
+                .then(restRes => {
+                    resolve([...results, ...restRes])
+                }).catch(err => resolve([...results, ['failed', err]]));
+            else
+                resolve(results);
+        })
     });
 
     var generateForSubFolders = (directoryURL, foregroundImgURL) => new Promise((resolve, reject) => {
