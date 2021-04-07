@@ -62,6 +62,14 @@ module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = 
     '-tune', 'stillimage', '-t', playtime, '-movflags', '+faststart', outputFileName,
   ])
 
+  let errorMessage = [];
+  proc.stderr.on("error",(chunk) => {
+    errorMessage.push(chunk.toString());
+    console.log(chunk.toString());
+  }).on("end",()=>{
+    reject(errorMessage );
+  });
+
   // once ffmpeg proc finishes, by crashing or otherwise
   proc.on("exit", (code, signal) => {
     if (code === 0)
