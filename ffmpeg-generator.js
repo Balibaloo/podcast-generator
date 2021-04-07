@@ -58,7 +58,7 @@ module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = 
     '-i', imagePath,
     ...[].concat.apply([], fileList.map((file, ind) => ["-i", file])),
     '-filter_complex', `[0]scale='iw-mod(iw,2)':'ih-mod(ih,2)',format=yuv420p[v];${complexFilterArguments}concat=n=${fileList.length}:v=0:a=1[a]`,
-    '-map', '[v]', '-r', '15', '-map', '[a]',
+    '-map', '[v]', '-r', '1', '-map', '[a]',
     '-tune', 'stillimage', '-t', playtime, '-movflags', '+faststart', outputFileName,
   ])
 
