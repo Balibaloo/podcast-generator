@@ -17,7 +17,14 @@ let showVideoDetails = (outputFileName, playtime, fileList) => {
 
 let getVideoDuration = (audioFiles) => new Promise((resolve, reject) => {
   Promise.all(audioFiles.map(getSinglePlaytime))
-    .then(results => resolve([Math.ceil(results.reduce((accum, val) => accum + val)), undefined])) // sum play time rounded to nearest second
+    .then(results => {
+      let playtimeTotal = Math.ceil(results.reduce((accum, val) => accum + val));
+      if (isNaN(playtimeTotal)) {
+        resolve([-1, audioFiles.map((val, i) => `${val}, ${results[i]}`)]);
+      } else {
+        resolve([playtimeTotal, undefined])
+      }
+    }) // sum play time rounded to nearest second
     .catch(err => {
       console.log(err);
       resolve([-1, err]);
@@ -32,7 +39,7 @@ let getSinglePlaytime = (URL) => new Promise((resolve, reject) => {
 
 module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = true) => new Promise(async (resolve, reject) => {
   let [playtime, err] = await getVideoDuration(fileList);
-  if (playtime === -1) {
+  if (playtime === -1 || isNaN(playtime)) {
     console.log("WARNING", outputFileName, "may be missing files, the playlist file is incorrect or some audio files are corrupt");
     return reject(err);
     // reject(new Error("Failed to fetch playtime"));
