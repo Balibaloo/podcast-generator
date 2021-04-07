@@ -66,6 +66,11 @@ module.exports.vidFromAudio = (fileList, imagePath, outputFileName, showStart = 
   proc.stderr.on("error",(chunk) => {
     errorMessage.push(chunk.toString());
     console.log(chunk.toString());
+  }).on("data",(chunk) => {
+    let matches = chunk.toString().match(/^f?rame=\s*(\d*).*time=(\d*:\d*:\d*.?\d*).*speed=(\d*.?\d*x)/);
+    if (matches){
+      console.log(`progress ${((matches[1]/playtime)*100).toPrecision(4)}% | pos ${matches[2]} | rate ${matches[3]} original`);
+    }    
   }).on("end",()=>{
     reject(errorMessage );
   });
