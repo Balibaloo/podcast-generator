@@ -83,6 +83,8 @@ module.exports = () => {
     }
 
     let execPromissesSyncOn = (argListList, promToExecute, index = 0, results = []) => new Promise((resolve, reject) => {
+        console.log(`${index} out of ${argListList.length}`);
+
         promToExecute(...argListList[index]).then((firstResults) => {
             results = [...results, firstResults];
 
